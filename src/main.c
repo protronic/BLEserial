@@ -20,7 +20,6 @@
 #include <zephyr/sys/ring_buffer.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/bluetooth/bluetooth.h>
-#include <zephyr/bluetooth/att.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/bluetooth/services/nus.h>
@@ -33,6 +32,11 @@ LOG_MODULE_REGISTER(ble_serial_bridge, LOG_LEVEL_INF);
 #define UART_FIFO_CHUNK      64
 #define NUS_SEND_RETRY_MS    5
 
+/* ATT default MTU per Bluetooth Core Spec; the negotiated value arrives
+ * through the att_mtu_updated callback.
+ */
+#define ATT_DEFAULT_MTU      23
+
 static const struct device *const bridge_uart =
 	DEVICE_DT_GET(DT_ALIAS(bridge_uart));
 
@@ -41,7 +45,7 @@ RING_BUF_DECLARE(ble_to_uart_rb, BLE_TO_UART_BUF_SIZE);
 
 static atomic_t nus_subscribed;
 static atomic_t uart_rx_dropped;
-static atomic_t att_mtu = ATOMIC_INIT(BT_ATT_DEFAULT_LE_MTU);
+static atomic_t att_mtu = ATOMIC_INIT(ATT_DEFAULT_MTU);
 
 static void ble_tx_work_handler(struct k_work *work);
 static void adv_work_handler(struct k_work *work);
@@ -211,7 +215,7 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	}
 
 	/* ATT MTU starts at the default until the central negotiates more */
-	atomic_set(&att_mtu, BT_ATT_DEFAULT_LE_MTU);
+	atomic_set(&att_mtu, ATT_DEFAULT_MTU);
 	LOG_INF("Connected: %s", addr);
 }
 
