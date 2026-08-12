@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# enable uart driver
+CONFIG_SERIAL=y
+
+# enable GPIO
+CONFIG_GPIO=y
+
+# No dedicated console UART on this board: USART1 goes to the M.2
+# host connector and is used as application UART, not as console.
+
+# Enable MPU
+CONFIG_ARM_MPU=y
+
+# Enable HW stack protection
+CONFIG_HW_STACK_PROTECTION=y

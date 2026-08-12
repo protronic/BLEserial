@@ -1,0 +1,6 @@
+board:
+  name: stm32wba55g_dk1
+  full_name: STM32WBA55G-DK1 Discovery Kit
+  vendor: st
+  socs:
+    - name: stm32wba55xx

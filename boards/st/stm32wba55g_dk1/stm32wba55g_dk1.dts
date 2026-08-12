@@ -1,0 +1,132 @@
+/*
+ * Copyright (c) 2026 Protronic GmbH
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * STM32WBA55G-DK1 Discovery Kit (STM32WBA55CGU6, UFQFPN48).
+ *
+ * Minimal board definition for this application:
+ *  - USART1: ST-LINK VCP console (TX = PB12, RX = PA8)
+ *  - USART2: free UART on ARDUINO D1/D0 and STMod+ CN12
+ *    (TX = PB0, RX = PA11; JP2 must be ON to route UART to STMod+)
+ *  - User LED LD3 (blue) on PB15
+ *
+ * On-board OLED, audio codec, microphones and joystick are not
+ * described here - they are unused by this application.
+ */
+
+/dts-v1/;
+#include <st/wba/stm32wba55Xg.dtsi>
+#include <st/wba/stm32wba55cgux-pinctrl.dtsi>
+
+/ {
+	model = "STMicroelectronics STM32WBA55G-DK1 board";
+	compatible = "st,stm32wba55g-dk1";
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	chosen {
+		zephyr,console = &usart1;
+		zephyr,shell-uart = &usart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	leds: leds {
+		compatible = "gpio-leds";
+
+		blue_led: led_0 {
+			gpios = <&gpiob 15 GPIO_ACTIVE_HIGH>;
+			label = "User LD3";
+		};
+	};
+
+	aliases {
+		led0 = &blue_led;
+		die-temp0 = &die_temp;
+	};
+};
+
+&clk_lse {
+	status = "okay";
+};
+
+&clk_hse {
+	status = "okay";
+
+	/*
+	 * Disable HSE trim applied by Clock Control.
+	 * Board-specific init will apply trim from OTP.
+	 */
+	/delete-property/ hse-trimming;
+};
+
+&clk_hsi {
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&clk_hse>;
+	clock-frequency = <DT_FREQ_M(32)>; /* Lowest value to manage radio events */
+	ahb-prescaler = <1>;
+	ahb5-prescaler = <1>;
+	apb1-prescaler = <1>;
+	apb2-prescaler = <2>;
+	apb7-prescaler = <1>;
+};
+
+&pwr {
+	power-supply = "ldo";
+};
+
+/* ST-LINK virtual COM port */
+&usart1 {
+	clocks = <&rcc STM32_CLOCK(APB2, 14)>,
+		 <&rcc STM32_SRC_HSI16 USART1_SEL(2)>;
+	pinctrl-0 = <&usart1_tx_pb12 &usart1_rx_pa8>;
+	pinctrl-1 = <&analog_pb12 &analog_pa8>;
+	pinctrl-names = "default", "sleep";
+	current-speed = <115200>;
+	status = "okay";
+};
+
+/* Free UART: ARDUINO D1 (TX)/D0 (RX), also on STMod+ CN12 with JP2 ON */
+&usart2 {
+	clocks = <&rcc STM32_CLOCK(APB1, 17)>,
+		 <&rcc STM32_SRC_HSI16 USART2_SEL(2)>;
+	pinctrl-0 = <&usart2_tx_pb0 &usart2_rx_pa11>;
+	pinctrl-1 = <&analog_pb0 &analog_pa11>;
+	pinctrl-names = "default", "sleep";
+	current-speed = <115200>;
+	status = "okay";
+};
+
+/* ADC4 + die temperature sensor: used by the BLE link layer for
+ * temperature based RF calibration (internal channel only).
+ */
+&adc4 {
+	st,adc-clock-source = "ASYNC";
+	st,adc-prescaler = <4>;
+	status = "okay";
+};
+
+&die_temp {
+	status = "okay";
+};
+
+&rng {
+	status = "okay";
+};
+
+/*
+ * Make the 2.4 GHz RADIO interrupt (IRQn 66) visible in the devicetree
+ * so that NUM_IRQS is computed large enough. The BLE link layer connects
+ * this IRQ at runtime; Zephyr 4.4 has no dedicated radio node yet
+ * (added upstream after 4.4).
+ */
+&bt_hci_wba {
+	interrupt-parent = <&nvic>;
+	interrupts = <66 0>;
+	interrupt-names = "radio";
+};

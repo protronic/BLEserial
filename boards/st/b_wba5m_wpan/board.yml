@@ -1,0 +1,6 @@
+board:
+  name: b_wba5m_wpan
+  full_name: B-WBA5M-WPAN (STM32WBA5MMG module)
+  vendor: st
+  socs:
+    - name: stm32wba55xx

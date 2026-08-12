@@ -1,0 +1,13 @@
+identifier: stm32wba55g_dk1
+name: ST STM32WBA55G-DK1 Discovery Kit
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+supported:
+  - gpio
+  - rng
+ram: 128
+flash: 1024
+vendor: st

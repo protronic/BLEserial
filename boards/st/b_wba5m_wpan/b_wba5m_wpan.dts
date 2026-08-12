@@ -1,0 +1,131 @@
+/*
+ * Copyright (c) 2026 Protronic GmbH
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * B-WBA5M-WPAN: Bluetooth LE connectivity expansion board (M.2 E-Key)
+ * with the STM32WBA5MMG module (STM32WBA55-class die, 1 MB flash,
+ * HSE/LSE crystals integrated in the module).
+ *
+ *  - USART1: UART to the M.2 E-Key host connector (BSP "COM1",
+ *    TX = PB12, RX = PA8)
+ *  - User LED LD1 (blue, active low) on PA1
+ *  - User button B2 (active high, pull-down) on PC13
+ *  - I2C3 (PA6/PA7) with on-board motion/env sensors and EEPROM is
+ *    not described here - unused by this application.
+ */
+
+/dts-v1/;
+#include <st/wba/stm32wba55Xg.dtsi>
+#include <st/wba/stm32wba5mmghx-pinctrl.dtsi>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+	model = "STMicroelectronics B-WBA5M-WPAN board";
+	compatible = "st,b-wba5m-wpan";
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+
+	leds: leds {
+		compatible = "gpio-leds";
+
+		blue_led: led_0 {
+			gpios = <&gpioa 1 GPIO_ACTIVE_LOW>;
+			label = "User LD1";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+
+		user_button: button_0 {
+			label = "User B2";
+			gpios = <&gpioc 13 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+			zephyr,code = <INPUT_KEY_0>;
+		};
+	};
+
+	aliases {
+		led0 = &blue_led;
+		sw0 = &user_button;
+		die-temp0 = &die_temp;
+	};
+};
+
+&clk_lse {
+	status = "okay";
+};
+
+&clk_hse {
+	status = "okay";
+
+	/*
+	 * Disable HSE trim applied by Clock Control.
+	 * Board-specific init will apply trim from OTP.
+	 */
+	/delete-property/ hse-trimming;
+};
+
+&clk_hsi {
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&clk_hse>;
+	clock-frequency = <DT_FREQ_M(32)>; /* Lowest value to manage radio events */
+	ahb-prescaler = <1>;
+	ahb5-prescaler = <1>;
+	apb1-prescaler = <1>;
+	apb2-prescaler = <2>;
+	apb7-prescaler = <1>;
+};
+
+&pwr {
+	power-supply = "ldo";
+};
+
+/* UART to the M.2 E-Key host connector (BSP COM1) */
+&usart1 {
+	clocks = <&rcc STM32_CLOCK(APB2, 14)>,
+		 <&rcc STM32_SRC_HSI16 USART1_SEL(2)>;
+	pinctrl-0 = <&usart1_tx_pb12 &usart1_rx_pa8>;
+	pinctrl-1 = <&analog_pb12 &analog_pa8>;
+	pinctrl-names = "default", "sleep";
+	current-speed = <115200>;
+	status = "okay";
+};
+
+/* ADC4 + die temperature sensor: used by the BLE link layer for
+ * temperature based RF calibration (internal channel only).
+ */
+&adc4 {
+	st,adc-clock-source = "ASYNC";
+	st,adc-prescaler = <4>;
+	status = "okay";
+};
+
+&die_temp {
+	status = "okay";
+};
+
+&rng {
+	status = "okay";
+};
+
+/*
+ * Make the 2.4 GHz RADIO interrupt (IRQn 66) visible in the devicetree
+ * so that NUM_IRQS is computed large enough. The BLE link layer connects
+ * this IRQ at runtime; Zephyr 4.4 has no dedicated radio node yet
+ * (added upstream after 4.4).
+ */
+&bt_hci_wba {
+	interrupt-parent = <&nvic>;
+	interrupts = <66 0>;
+	interrupt-names = "radio";
+};

@@ -1,0 +1,13 @@
+identifier: b_wba5m_wpan
+name: ST B-WBA5M-WPAN (STM32WBA5MMG module)
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+supported:
+  - gpio
+  - rng
+ram: 128
+flash: 1024
+vendor: st

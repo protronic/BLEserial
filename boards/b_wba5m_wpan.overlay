@@ -1,0 +1,18 @@
+/*
+ * B-WBA5M-WPAN: USART1 als Bridge-UART verwenden.
+ *
+ * USART1 (PB12 = TX, PA8 = RX) ist der Host-UART der M.2-E-Key-Karte
+ * (BSP "COM1") - die Karte verhaelt sich damit als transparentes
+ * BLE-Serial-Modem fuer das Host-Board.
+ */
+
+/ {
+	aliases {
+		bridge-uart = &usart1;
+	};
+};
+
+&usart1 {
+	status = "okay";
+	current-speed = <115200>;
+};

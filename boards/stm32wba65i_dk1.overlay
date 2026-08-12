@@ -1,0 +1,44 @@
+/*
+ * STM32WBA65I-DK1: USART2 als Bridge-UART verwenden.
+ *
+ * USART2 liegt auf den freien Arduino-Pins:
+ *   PA12 = USART2_TX -> ARDUINO D1
+ *   PA11 = USART2_RX -> ARDUINO D0
+ * USART1 (PB12/PA8, ST-LINK VCP) bleibt fuer Konsole/Logging frei.
+ */
+
+/ {
+	aliases {
+		bridge-uart = &usart2;
+		die-temp0 = &die_temp;
+	};
+};
+
+/*
+ * Die-Temperatursensor fuer die temperaturbasierte RF-Kalibrierung des
+ * BLE-Link-Layers (ADC4 ist auf diesem Board bereits aktiv).
+ */
+&die_temp {
+	status = "okay";
+};
+
+&usart2 {
+	clocks = <&rcc STM32_CLOCK(APB1, 17)>,
+		 <&rcc STM32_SRC_HSI16 USART2_SEL(2)>;
+	pinctrl-0 = <&usart2_tx_pa12 &usart2_rx_pa11>;
+	pinctrl-1 = <&analog_pa12 &analog_pa11>;
+	pinctrl-names = "default", "sleep";
+	current-speed = <115200>;
+	status = "okay";
+};
+
+/*
+ * Radio-IRQ (66) des BLE-Link-Layers im Devicetree sichtbar machen,
+ * damit NUM_IRQS gross genug berechnet wird (Zephyr 4.4 hat noch
+ * keinen eigenen Radio-Knoten; upstream nach 4.4 ergaenzt).
+ */
+&bt_hci_wba {
+	interrupt-parent = <&nvic>;
+	interrupts = <66 0>;
+	interrupt-names = "radio";
+};
