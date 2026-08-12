@@ -5,6 +5,12 @@
  *   PA12 = USART2_TX -> ARDUINO D1
  *   PA11 = USART2_RX -> ARDUINO D0
  * USART1 (PB12/PA8, ST-LINK VCP) bleibt fuer Konsole/Logging frei.
+ *
+ * SPI1 (Arduino) nutzt ebenfalls PA12 als NSS — muss daher aus.
+ *
+ * Zephyr 4.4.2 Board-DTS laeuft mit HSE/2 @ 16 MHz und ahb5/2 — zu langsam
+ * fuer den BLE-Link-Layer (kein sichtbares Advertising). Align mit upstream /
+ * nucleo_wba65ri: 32 MHz SYSCLK, ahb5-prescaler = 1.
  */
 
 / {
@@ -14,12 +20,34 @@
 	};
 };
 
+/* Radio-taugliche Taktung (siehe Zephyr-Hauptlinie stm32wba65i_dk1.dts) */
+&clk_hse {
+	status = "okay";
+	/delete-property/ hse-div2;
+	/delete-property/ hse-trimming;
+};
+
+&rcc {
+	clocks = <&clk_hse>;
+	clock-frequency = <DT_FREQ_M(32)>; /* Minimum fuer Radio-Events */
+	ahb-prescaler = <1>;
+	ahb5-prescaler = <1>;
+	apb1-prescaler = <1>;
+	apb2-prescaler = <2>;
+	apb7-prescaler = <1>;
+};
+
 /*
  * Die-Temperatursensor fuer die temperaturbasierte RF-Kalibrierung des
  * BLE-Link-Layers (ADC4 ist auf diesem Board bereits aktiv).
  */
 &die_temp {
 	status = "okay";
+};
+
+/* PA12-Konflikt mit usart2_tx vermeiden */
+&spi1 {
+	status = "disabled";
 };
 
 &usart2 {
@@ -33,12 +61,11 @@
 };
 
 /*
- * Radio-IRQ (66) des BLE-Link-Layers im Devicetree sichtbar machen,
- * damit NUM_IRQS gross genug berechnet wird (Zephyr 4.4 hat noch
- * keinen eigenen Radio-Knoten; upstream nach 4.4 ergaenzt).
+ * Radio-IRQ (66) + SW-Low (HASH=61) im Devicetree, damit NUM_IRQS gross
+ * genug ist (Zephyr 4.4 hat das fuer WBA65 noch nicht upstream).
  */
 &bt_hci_wba {
 	interrupt-parent = <&nvic>;
-	interrupts = <66 0>;
-	interrupt-names = "radio";
+	interrupts = <66 0>, <61 0>;
+	interrupt-names = "radio", "radio-sw-low";
 };
