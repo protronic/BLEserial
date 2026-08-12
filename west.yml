@@ -1,0 +1,23 @@
+# West-Manifest: pinnt Zephyr auf v4.4.2 (passend zum Zephyr SDK 1.0.x).
+#
+# Verwendung (T2-Topologie, diese Repo ist das Manifest-Repository):
+#   west init -l <pfad-zu-diesem-repo>
+#   west update
+manifest:
+  self:
+    path: bleserial
+
+  remotes:
+    - name: zephyrproject-rtos
+      url-base: https://github.com/zephyrproject-rtos
+
+  projects:
+    - name: zephyr
+      remote: zephyrproject-rtos
+      revision: v4.4.2
+      import:
+        # Nur die Module holen, die fuer STM32WB gebraucht werden
+        name-allowlist:
+          - cmsis
+          - cmsis_6
+          - hal_stm32

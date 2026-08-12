@@ -1,0 +1,27 @@
+/*
+ * STM32WB5MM-DK: LPUART1 als Bridge-UART verwenden.
+ *
+ * LPUART1 liegt auf freien Pins am STMod+-Steckverbinder (CN5):
+ *   PA2 = LPUART1_TX, PA3 = LPUART1_RX
+ * USART1 (PB6/PB7, ST-LINK VCP) bleibt fuer Konsole/Logging frei.
+ */
+
+/ {
+	aliases {
+		bridge-uart = &lpuart1;
+	};
+
+	chosen {
+		/*
+		 * Die Board-DTS routet BT-Monitor/C2H-Debug auf LPUART1.
+		 * Beides wird hier nicht genutzt - LPUART1 gehoert der Bridge.
+		 */
+		/delete-property/ zephyr,bt-mon-uart;
+		/delete-property/ zephyr,bt-c2h-uart;
+	};
+};
+
+&lpuart1 {
+	status = "okay";
+	current-speed = <115200>;
+};
